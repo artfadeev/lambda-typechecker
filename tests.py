@@ -1,4 +1,4 @@
-from main import Type, parse_type
+from main import *
 
 def test_Type():
     t1 = Type('implication', Type('base', 'a'), 
@@ -22,9 +22,34 @@ def test_TypedTerm():
                 TypedTerm.variable('b', parse_type('p'))
             )
         )
-    assert str(tt1)=='La:(p->q).(a b:p)'
+    assert str(tt1)=='(La:(p->q).(a b:p))'
 
+def test_TypedTerm_parse():
+    tt1 = TypedTerm.abstraction(
+            TypedTerm.variable('a', parse_type('p->q')),
+            TypedTerm.application(
+                TypedTerm.variable('a'),
+                TypedTerm.variable('b', parse_type('p'))
+            )
+        ) 
+    assert tt1 == TypedTerm.parse('(La:(p->q).(a b:p))')
+
+def test_Type_apply():
+    t1 = parse_type('a->((c->b)->c)')
+    t2 = parse_type('a')
+    t3 = parse_type('c->b')
+
+    assert t1.apply(t2).apply(t3)==parse_type('c')
+
+    try:
+        t3.apply(t2)
+    except Exception:
+        pass
+    else:
+        raise Exception('should have been error')
 
 if __name__ == '__main__':
     test_Type()
     test_TypedTerm()
+    # test_TypedTerm_parse()
+    test_Type_apply()

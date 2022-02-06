@@ -15,6 +15,12 @@ class Type:
         '''Constructor for Type::=Base'''
         return cls('base', base_variable)
 
+    def apply(self, other):
+        '''Find type of application self type to other type'''
+        if self.rule!='implication' or self.args[0]!=other:
+            raise Exception(f'Type {self} can\' be applied to type {other}')
+        return self.args[1]
+
     def __eq__(self, other):
         if self.rule != other.rule:
             return False
