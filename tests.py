@@ -29,10 +29,19 @@ def test_TypedTerm_parse():
             TypedTerm.variable('a', parse_type('p->q')),
             TypedTerm.application(
                 TypedTerm.variable('a'),
-                TypedTerm.variable('b', parse_type('p'))
+                TypedTerm.variable('b')
             )
         ) 
-    assert tt1 == TypedTerm.parse('(La:(p->q).(a b:p))')
+    assert tt1 == TypedTerm.parse('(La:(p->q).(a b))')
+
+    tts = [
+        '((Lx:p.x) y)',
+        '((a b) (c d))',
+        '((Lx:p.(Ly:q.(z y))) q)',
+    ]
+
+    for tt in tts:
+        assert(str(TypedTerm.parse(tt))==tt)
 
 def test_Type_apply():
     t1 = parse_type('a->((c->b)->c)')
@@ -51,5 +60,5 @@ def test_Type_apply():
 if __name__ == '__main__':
     test_Type()
     test_TypedTerm()
-    # test_TypedTerm_parse()
+    test_TypedTerm_parse()
     test_Type_apply()
