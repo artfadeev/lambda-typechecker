@@ -57,8 +57,35 @@ def test_Type_apply():
     else:
         raise Exception('should have been error')
 
+def test_type_check():
+    tests_ok = [
+        ("Lx:a->b.(x y)", "y:a", "(a->b)->b"),
+        ("Lx:a->(a->b).Ly:a.((x y) y)", "", "(a->(a->b))->(a->b)"),
+        ("((x y) z)", "x:(a->b)->(c->d), y:a->b, z:c", "d"),
+    ]
+
+    for term, context, _type in tests_ok:
+        assert type_check(TypedTerm.parse(term), 
+                    Context.parse_context(context))==parse_type(_type), term
+
+    tests_fail = [
+        ("y", "x:a, z:b"),
+        ("x y", "x:(a->b)->c, y:a"),
+        ("Lx:a->b.x y", "y:c"),
+    ]
+
+    for term, context in tests_fail:
+        try:
+            type_check(TypedTerm.parse(term),
+                    Context.parse_context(context))
+        except Exception:
+            pass
+        else:
+            raise Exception("should have been error")
+
 if __name__ == '__main__':
     test_Type()
     test_TypedTerm()
     test_TypedTerm_parse()
     test_Type_apply()
+    test_type_check()
