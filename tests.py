@@ -1,61 +1,71 @@
+import pytest
 from main import *
 
-def test_Type():
-    t1 = Type('implication', Type('base', 'a'), 
-                             Type('implication', Type('base', 'b'),
-                                                 Type('base', 'c')))
-    t2 = Type.implication(Type.base('a'), 
-                          Type.implication(Type.base('b'),
-                                           Type.base('c')))
-    t3 = Type.parse('a->(b->c)')
-    t4 = Type.parse('(((((a))->((b)->c))))')
+class TestType:
+    def test_constuctors(self):
+        t1 = Type('implication', Type('base', 'a'), 
+                                 Type('implication', Type('base', 'b'),
+                                                     Type('base', 'c')))
+        t2 = Type.implication(Type.base('a'), 
+                              Type.implication(Type.base('b'),
+                                               Type.base('c')))
+        t3 = Type.parse('a->(b->c)')
+        t4 = Type.parse('(((((a))->((b)->c))))')
 
-    assert t1 == t2
-    assert t1 == t3
-    assert t1 == t4
+        assert t1 == t2
+        assert t1 == t3
+        assert t1 == t4
 
-def test_TypedTerm():
-    tt1 = TypedTerm.abstraction(
-            TypedTerm.variable('a', Type.parse('p->q')),
-            TypedTerm.application(
-                TypedTerm.variable('a'),
-                TypedTerm.variable('b', Type.parse('p'))
+    def test_apply(self):
+        tests_valid = [
+            ('a->((c->b)->c)', 'a', '((c->b)->c)'),
+            ('((c->b)->c)', 'c->b', 'c'),
+        ]
+
+        for t1, t2, result in tests_valid:
+            assert Type.parse(t1).apply(Type.parse(t2))==Type.parse(result)
+
+        tests_fail = [
+            ('a->b', 'c'),
+            ('a', 'a'),
+            ('(a->b)->c', 'a'),
+            ('c', 'c->d')
+        ]
+
+        for t1, t2 in tests_fail:
+            with pytest.raises(Exception):
+                Type.parse(t1).apply(Type.parse(t2))
+
+class TestTypedTerm:
+    def test_constructor(self):
+        tt1 = TypedTerm.abstraction(
+                TypedTerm.variable('a', Type.parse('p->q')),
+                TypedTerm.application(
+                    TypedTerm.variable('a'),
+                    TypedTerm.variable('b', Type.parse('p'))
+                )
             )
-        )
-    assert str(tt1)=='(La:(p->q).(a b:p))'
+        assert str(tt1)=='(La:(p->q).(a b:p))'
 
-def test_TypedTerm_parse():
-    tt1 = TypedTerm.abstraction(
-            TypedTerm.variable('a', Type.parse('p->q')),
-            TypedTerm.application(
-                TypedTerm.variable('a'),
-                TypedTerm.variable('b')
-            )
-        ) 
-    assert tt1 == TypedTerm.parse('(La:(p->q).(a b))')
+    def test_parse(self):
+        tt1 = TypedTerm.abstraction(
+                TypedTerm.variable('a', Type.parse('p->q')),
+                TypedTerm.application(
+                    TypedTerm.variable('a'),
+                    TypedTerm.variable('b')
+                )
+            ) 
+        assert tt1 == TypedTerm.parse('(La:(p->q).(a b))')
 
-    tts = [
-        '((Lx:p.x) y)',
-        '((a b) (c d))',
-        '((Lx:p.(Ly:q.(z y))) q)',
-    ]
+        tts = [
+            '((Lx:p.x) y)',
+            '((a b) (c d))',
+            '((Lx:p.(Ly:q.(z y))) q)',
+        ]
 
-    for tt in tts:
-        assert(str(TypedTerm.parse(tt))==tt)
+        for tt in tts:
+            assert(str(TypedTerm.parse(tt))==tt)
 
-def test_Type_apply():
-    t1 = Type.parse('a->((c->b)->c)')
-    t2 = Type.parse('a')
-    t3 = Type.parse('c->b')
-
-    assert t1.apply(t2).apply(t3)==Type.parse('c')
-
-    try:
-        t3.apply(t2)
-    except Exception:
-        pass
-    else:
-        raise Exception('should have been error')
 
 def test_type_check():
     tests_ok = [
@@ -75,13 +85,9 @@ def test_type_check():
     ]
 
     for term, context in tests_fail:
-        try:
-            type_check(TypedTerm.parse(term),
-                    Context.parse(context))
-        except Exception:
-            pass
-        else:
-            raise Exception("should have been error")
+        with pytest.raises(Exception):
+            type_check(TypedTerm.parse(term), Context.parse(context))
+        
 
 if __name__ == '__main__':
     test_Type()
