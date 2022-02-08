@@ -1,5 +1,7 @@
 import pytest
-from main import *
+from type_checker.types import Type, Context
+from type_checker.terms import TypedTerm
+from type_checker.type_checker import type_check
 
 class TestType:
     def test_constuctors(self):
@@ -87,11 +89,3 @@ def test_type_check():
     for term, context in tests_fail:
         with pytest.raises(Exception):
             type_check(TypedTerm.parse(term), Context.parse(context))
-        
-
-if __name__ == '__main__':
-    test_Type()
-    test_TypedTerm()
-    test_TypedTerm_parse()
-    test_Type_apply()
-    test_type_check()
