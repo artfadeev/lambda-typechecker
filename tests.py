@@ -7,8 +7,8 @@ def test_Type():
     t2 = Type.implication(Type.base('a'), 
                           Type.implication(Type.base('b'),
                                            Type.base('c')))
-    t3 = parse_type('a->(b->c)')
-    t4 = parse_type('(((((a))->((b)->c))))')
+    t3 = Type.parse('a->(b->c)')
+    t4 = Type.parse('(((((a))->((b)->c))))')
 
     assert t1 == t2
     assert t1 == t3
@@ -16,17 +16,17 @@ def test_Type():
 
 def test_TypedTerm():
     tt1 = TypedTerm.abstraction(
-            TypedTerm.variable('a', parse_type('p->q')),
+            TypedTerm.variable('a', Type.parse('p->q')),
             TypedTerm.application(
                 TypedTerm.variable('a'),
-                TypedTerm.variable('b', parse_type('p'))
+                TypedTerm.variable('b', Type.parse('p'))
             )
         )
     assert str(tt1)=='(La:(p->q).(a b:p))'
 
 def test_TypedTerm_parse():
     tt1 = TypedTerm.abstraction(
-            TypedTerm.variable('a', parse_type('p->q')),
+            TypedTerm.variable('a', Type.parse('p->q')),
             TypedTerm.application(
                 TypedTerm.variable('a'),
                 TypedTerm.variable('b')
@@ -44,11 +44,11 @@ def test_TypedTerm_parse():
         assert(str(TypedTerm.parse(tt))==tt)
 
 def test_Type_apply():
-    t1 = parse_type('a->((c->b)->c)')
-    t2 = parse_type('a')
-    t3 = parse_type('c->b')
+    t1 = Type.parse('a->((c->b)->c)')
+    t2 = Type.parse('a')
+    t3 = Type.parse('c->b')
 
-    assert t1.apply(t2).apply(t3)==parse_type('c')
+    assert t1.apply(t2).apply(t3)==Type.parse('c')
 
     try:
         t3.apply(t2)
@@ -66,7 +66,7 @@ def test_type_check():
 
     for term, context, _type in tests_ok:
         assert type_check(TypedTerm.parse(term), 
-                    Context.parse_context(context))==parse_type(_type), term
+                    Context.parse(context))==Type.parse(_type), term
 
     tests_fail = [
         ("y", "x:a, z:b"),
@@ -77,7 +77,7 @@ def test_type_check():
     for term, context in tests_fail:
         try:
             type_check(TypedTerm.parse(term),
-                    Context.parse_context(context))
+                    Context.parse(context))
         except Exception:
             pass
         else:

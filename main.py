@@ -43,50 +43,51 @@ class Type:
         else:
             return f'base({self.args[0]})'
 
-def parse_type(str_type):
-    '''Define type from string representation'''
-    
-    # Assumption: str_type is either (str_type->str_type) or base (one letter)
-    # TODO: check for incorrect syntax.
-    # TODO: make some brackets unnecessary
+    @classmethod
+    def parse(cls, str_type):
+        '''Define type from string representation'''
+        
+        # Assumption: str_type is either (str_type->str_type) or base (one letter)
+        # TODO: check for incorrect syntax.
+        # TODO: make some brackets unnecessary
 
-    depth = 0 # depth of nested brackets
-    operands = []
-    current_operand = ''
+        depth = 0 # depth of nested brackets
+        operands = []
+        current_operand = ''
 
-    for c in str_type:
-        # 1. Modify current top-level operand
+        for c in str_type:
+            # 1. Modify current top-level operand
 
-        # starting new operand
-        if depth==0 and (c.isalpha() or c=='('):
-            current_operand = c
-        # continuing existing operand
-        elif depth>0:
-            current_operand += c # FIX: quadratic complexity
+            # starting new operand
+            if depth==0 and (c.isalpha() or c=='('):
+                current_operand = c
+            # continuing existing operand
+            elif depth>0:
+                current_operand += c # FIX: quadratic complexity
 
-        # 2. Change depth
-        if c=='(':
-            depth+=1
-        elif c==')':
-            depth-=1
+            # 2. Change depth
+            if c=='(':
+                depth+=1
+            elif c==')':
+                depth-=1
 
-        # 3. Finish top-level operand
-        if depth==0 and current_operand:
-            operands.append(current_operand)
-            current_operand = '' # unnecessary line
-    
-    if len(operands)==2:
-        return Type.implication(parse_type(operands[0]), 
-                                parse_type(operands[1]))
-    elif len(operands)==1 and operands[0].isalpha():
-        return Type.base(operands[0])
-    else:
-        return parse_type(str_type[1:-1])
+            # 3. Finish top-level operand
+            if depth==0 and current_operand:
+                operands.append(current_operand)
+                current_operand = '' # unnecessary line
+        
+        if len(operands)==2:
+            return Type.implication(cls.parse(operands[0]), 
+                                    cls.parse(operands[1]))
+        elif len(operands)==1 and operands[0].isalpha():
+            return Type.base(operands[0])
+        else:
+            return cls.parse(str_type[1:-1])
 
 
 class Context(dict):
     @classmethod
-    def parse_context(cls, str_context):
+    def parse(cls, str_context):
         '''Parse context from string in form var1:type1, var2:type2, ...
         
         If variables repeat, latest value will be taken'''
@@ -99,7 +100,7 @@ class Context(dict):
         definitions = map(lambda d: d.strip().split(':'),
                           str_context.split(','))
         for (var, str_type) in definitions:
-            context[var] = parse_type(str_type)
+            context[var] = Type.parse(str_type)
         return cls(context)
 
 class TypedTerm:
@@ -171,7 +172,7 @@ class TypedTerm:
             binded_var, inside_term = str_typed_term[1:].split('.', 1)
             var_name, var_type = binded_var.split(':')
             return cls.abstraction(
-                        cls.variable(var_name, parse_type(var_type)),
+                        cls.variable(var_name, Type.parse(var_type)),
                         cls.parse(inside_term)
                         )
         elif len(operands)==2:
