@@ -1,22 +1,16 @@
 import pytest
-from type_checker.types import Type, Context
-from type_checker.terms import TypedTerm
+from type_checker.types import Type, Implication, Base, Context
+from type_checker.terms import TypedTerm, Variable, Application, Abstraction
 from type_checker.type_checker import type_check
 
 class TestType:
     def test_constuctors(self):
-        t1 = Type('implication', Type('base', 'a'), 
-                                 Type('implication', Type('base', 'b'),
-                                                     Type('base', 'c')))
-        t2 = Type.implication(Type.base('a'), 
-                              Type.implication(Type.base('b'),
-                                               Type.base('c')))
-        t3 = Type.parse('a->(b->c)')
-        t4 = Type.parse('(((((a))->((b)->c))))')
+        t1 = Implication(Base('a'), Implication(Base('b'), Base('c')))
+        t2 = Type.parse('a->(b->c)')
+        t3 = Type.parse('(((((a))->((b)->c))))')
 
         assert t1 == t2
         assert t1 == t3
-        assert t1 == t4
 
     def test_apply(self):
         tests_valid = [
@@ -40,23 +34,14 @@ class TestType:
 
 class TestTypedTerm:
     def test_constructor(self):
-        tt1 = TypedTerm.abstraction(
-                TypedTerm.variable('a', Type.parse('p->q')),
-                TypedTerm.application(
-                    TypedTerm.variable('a'),
-                    TypedTerm.variable('b', Type.parse('p'))
-                )
-            )
-        assert str(tt1)=='(La:(p->q).(a b:p))'
+        tt1 = Abstraction('a', Type.parse('p->q'),
+                Application(Variable('a'), Variable('b')))
+        assert str(tt1)=='(La:(p->q).(a b))'
 
     def test_parse(self):
-        tt1 = TypedTerm.abstraction(
-                TypedTerm.variable('a', Type.parse('p->q')),
-                TypedTerm.application(
-                    TypedTerm.variable('a'),
-                    TypedTerm.variable('b')
-                )
-            ) 
+        tt1 = Abstraction('a', Type.parse('p->q'),
+                Application(Variable('a'), Variable('b')))
+
         assert tt1 == TypedTerm.parse('(La:(p->q).(a b))')
 
         tts = [

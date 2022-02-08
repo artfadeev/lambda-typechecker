@@ -1,48 +1,9 @@
+from dataclasses import dataclass
 LAMBDA = 'L'
 
 
 class Type:
-    def __init__(self, rule, *args): 
-        self.rule = rule
-        self.args = args
-
-    @classmethod
-    def implication(cls, left, right):
-        '''Constructor for Type::=Type->Type '''
-        return cls('implication', left, right)
-
-    @classmethod
-    def base(cls, base_variable):
-        '''Constructor for Type::=Base'''
-        return cls('base', base_variable)
-
-    def apply(self, other):
-        '''Find type of application self type to other type'''
-        if self.rule!='implication' or self.args[0]!=other:
-            raise Exception(f'Type {self} can\' be applied to type {other}')
-        return self.args[1]
-
-    def __eq__(self, other):
-        if self.rule != other.rule:
-            return False
-
-        for (t1, t2) in zip(self.args, other.args):
-            if t1!=t2:
-                return False
-        
-        return True
-
-    def __str__(self):
-        if self.rule == 'base':
-            return self.args[0]
-        else:
-            return f'({str(self.args[0])}->{str(self.args[1])})'
-
-    def __repr__(self):
-        if len(self.args)==2:
-            return f'implication({self.args[0].__repr__()}, {self.args[1].__repr__()})'
-        else:
-            return f'base({self.args[0]})'
+    '''Type base class'''
 
     @classmethod
     def parse(cls, str_type):
@@ -78,12 +39,40 @@ class Type:
                 current_operand = '' # unnecessary line
         
         if len(operands)==2:
-            return Type.implication(cls.parse(operands[0]), 
-                                    cls.parse(operands[1]))
+            return Implication(cls.parse(operands[0]), cls.parse(operands[1]))
         elif len(operands)==1 and operands[0].isalpha():
-            return Type.base(operands[0])
+            return Base(operands[0])
         else:
             return cls.parse(str_type[1:-1])
+
+
+@dataclass
+class Base(Type):
+    name: str
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return f'Base({self.name})'
+
+
+@dataclass
+class Implication(Type):
+    left: Type
+    right: Type
+
+    def __str__(self):
+        return f'({self.left}->{self.right})'
+
+    def __repr__(self):
+        return f'Implication({repr(self.left)}, {repr(self.right)})'
+
+    def apply(self, other):
+        if self.left!=other:
+            raise Exception(f'Type {self} can\'t be applied to type {other}!')
+        return self.right
+
 
 
 class Context(dict):

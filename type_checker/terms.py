@@ -1,42 +1,12 @@
-from .types import Type, Context
+from dataclasses import dataclass
+from .types import Type, Base, Implication, Context
 
 LAMBDA = 'L'
 
 
+
 class TypedTerm:
-    def __init__(self, rule, *args, _type=None):
-        '''Initialize 
-
-        Arguments:
-        rule - either 'variable', 'abstraction' or 'application'
-        args - arguments: 1 for variable, 2 for abstraction, 2 for application
-        _type -- expected type of the term. Default is None.
-        '''
-
-        # TODO: in 'variable' case str shouldn't be stored in args.
-        #       create another argument?
-        self.rule = rule
-        self.args = args
-        self.type = _type
-
-    @classmethod
-    def variable(cls, name, _type=None):
-        return cls('variable', name, _type=_type)
-
-    @classmethod
-    def abstraction(cls, binded_var, term, _type=None):
-        if binded_var.rule != 'variable':
-            # TODO: create good exception names
-            raise Exception('Lambda parameter must be a variable.')
-        # TODO: maybe this check should be performed while typecheking?
-        if binded_var.type is None:
-            raise Exception('Lambda parameter must have a type.') 
-        return cls('abstraction', binded_var, term, _type=_type)
-
-    @classmethod
-    def application(cls, left_term, right_term, _type=None):
-        return cls('application', left_term, right_term, _type=_type)
-
+    '''Typed term base class'''
 
     @classmethod
     def parse(cls, str_typed_term):
@@ -67,44 +37,39 @@ class TypedTerm:
         if len(operands)==1 and str_typed_term.startswith('('):
             return cls.parse(str_typed_term[1:-1])
         elif len(operands)==1 and str_typed_term.isalpha():
-            return cls.variable(str_typed_term)
+            return Variable(str_typed_term)
         elif len(operands)==1 and str_typed_term.startswith(LAMBDA):
             binded_var, inside_term = str_typed_term[1:].split('.', 1)
             var_name, var_type = binded_var.split(':')
-            return cls.abstraction(
-                        cls.variable(var_name, Type.parse(var_type)),
-                        cls.parse(inside_term)
-                        )
+            return Abstraction(var_name, Type.parse(var_type), 
+                                cls.parse(inside_term))
         elif len(operands)==2:
-            return cls.application(
-                        cls.parse(operands[0]),
-                        cls.parse(operands[1])
-                        )
+            return Application(cls.parse(operands[0]), cls.parse(operands[1]))
+
+
+@dataclass
+class Variable(TypedTerm):
+    name: str
 
     def __str__(self):
-        s = ''
+        return self.name
 
-        # term
-        if self.rule=='variable':
-            s = self.args[0]
-        elif self.rule=='abstraction':
-            s = f'({LAMBDA}{str(self.args[0])}.{str(self.args[1])})'
-        elif self.rule=='application':
-            s = f'({str(self.args[0])} {str(self.args[1])})'
 
-        # type (if given)
-        if self.type is not None:
-            s += f':{str(self.type)}'
-        return s
+@dataclass
+class Abstraction(TypedTerm):
+    variable_name: str
+    variable_type: Type
+    inner_term: TypedTerm
 
-    def __eq__(self, other):
-        if self.rule!=other.rule or \
-           self.type!=other.type or \
-           len(self.args)!=len(other.args):
-            return False
+    def __str__(self):
+        return f'({LAMBDA}{self.variable_name}:'+\
+                f'{self.variable_type}.{self.inner_term})'
 
-        for arg1, arg2 in zip(self.args, other.args):
-            if arg1!=arg2:
-                return False
 
-        return True
+@dataclass
+class Application(TypedTerm):
+    left: TypedTerm
+    right: TypedTerm
+
+    def __str__(self):
+        return f'({self.left} {self.right})'
