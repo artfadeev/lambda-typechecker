@@ -27,6 +27,16 @@ class Token:
     lexeme: str 
     position: int # position of first symbol in the source string
 
+
+@dataclass
+class ScanError(Exception):
+    message: str
+    position: int
+
+    def __str__(self):
+        return f'ScanError at position {self.position}: {self.message}'
+
+
 class Scanner:
     '''Class for tokenizing input'''
     def __init__(self, source: str):
@@ -70,8 +80,7 @@ class Scanner:
                     tokens.append(Token(keywords[word], word, pos))
                 else:
                     tokens.append(Token(TokenType.VARIABLE, word, pos))
+            else:
+                raise ScanError('Unknown token', self.position)
 
         return tokens
-
-
-

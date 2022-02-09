@@ -3,6 +3,7 @@ from type_checker.types import Type, Implication, Base, Context
 from type_checker.terms import TypedTerm, Variable, Application, Abstraction
 from type_checker.type_checker import type_check
 from type_checker.parser import Scanner, TokenType
+from type_checker.parser import ScanError
 
 class TestParser:
     def test_Scanner(self):
@@ -25,6 +26,28 @@ class TestParser:
             assert len(tokens)==len(expected_token_types)
             for token, _type in zip(tokens, expected_token_types):
                 assert token.type==_type
+
+    def test_ScanError(self):
+        tests_ok = [
+            'lambda x:a->a.....abra cadabra',
+            'lambda lambda \n\n\n\n y :::',
+            '->->->->...:::(())))',
+        ]
+
+        for source in tests_ok:
+            Scanner(source).scan()
+
+        tests_fail = [
+            # (source, position of errror)
+            ('1', 0), # variables can't contain numbers
+            ('x+y', 1), # unknown symbols
+            ('->.-->', 3), # unifinished arrow
+        ]
+
+        for source, position in tests_fail:
+            with pytest.raises(ScanError) as exc:
+                Scanner(source).scan()
+            assert exc.value.position == position
 
 class TestType:
     def test_constuctors(self):
