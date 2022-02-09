@@ -1,6 +1,6 @@
 from enum import Enum
 from dataclasses import dataclass
-from .types import Base, Implication
+from .types import Base, Implication, Context
 from .terms import Variable, Application, Abstraction
 
 class TokenType(Enum):
@@ -185,3 +185,20 @@ class Parser:
             # something like "<primary term> ... <primary term> )"
             raise SyntaxError("Unknown syntax", self.current().position)
         return term
+
+
+def parse_context(str_context):
+    '''Parse context from string in form var1:type1, var2:type2, ...
+    
+    If variables repeat, latest value will be taken'''
+
+    # Assumptions: correct syntax
+    if str_context=='':
+        return Context({})
+
+    context = {}
+    definitions = map(lambda d: d.strip().split(':'),
+                      str_context.split(','))
+    for (var, str_type) in definitions:
+        context[var] = Parser(Scanner(str_type).scan())._type()
+    return Context(context)

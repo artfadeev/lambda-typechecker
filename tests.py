@@ -2,7 +2,7 @@ import pytest
 from type_checker.types import Type, Implication, Base, Context
 from type_checker.terms import TypedTerm, Variable, Application, Abstraction
 from type_checker.type_checker import type_check
-from type_checker.parser import Scanner, TokenType, Parser
+from type_checker.parser import Scanner, TokenType, Parser, parse_context
 from type_checker.parser import ScanError
 
 class TestParser:
@@ -101,11 +101,14 @@ class TestParser:
             tokens = Scanner(s).scan()
             assert Parser(tokens).parse()==term
 
+def parse_type(str_type):
+    return Parser(Scanner(str_type).scan())._type()
+
 class TestType:
     def test_constuctors(self):
         t1 = Implication(Base('a'), Implication(Base('b'), Base('c')))
-        t2 = Type.parse('a->(b->c)')
-        t3 = Type.parse('(((((a))->((b)->c))))')
+        t2 = parse_type('a->(b->c)')
+        t3 = parse_type('(((((a))->((b)->c))))')
 
         assert t1 == t2
         assert t1 == t3
@@ -117,7 +120,7 @@ class TestType:
         ]
 
         for t1, t2, result in tests_valid:
-            assert Type.parse(t1).apply(Type.parse(t2))==Type.parse(result)
+            assert parse_type(t1).apply(parse_type(t2))==parse_type(result)
 
         tests_fail = [
             ('a->b', 'c'),
@@ -128,47 +131,51 @@ class TestType:
 
         for t1, t2 in tests_fail:
             with pytest.raises(Exception):
-                Type.parse(t1).apply(Type.parse(t2))
+                parse_type(t1).apply(parse_type(t2))
+
+def parse_term(str_term):
+    return Parser(Scanner(str_term).scan()).parse()
+
 
 class TestTypedTerm:
     def test_constructor(self):
-        tt1 = Abstraction('a', Type.parse('p->q'),
+        tt1 = Abstraction('a', parse_type('p->q'),
                 Application(Variable('a'), Variable('b')))
-        assert str(tt1)=='(La:(p->q).(a b))'
+        assert str(tt1)=='(lambda a:(p->q).(a b))'
 
     def test_parse(self):
-        tt1 = Abstraction('a', Type.parse('p->q'),
+        tt1 = Abstraction('a', parse_type('p->q'),
                 Application(Variable('a'), Variable('b')))
 
-        assert tt1 == TypedTerm.parse('(La:(p->q).(a b))')
+        assert tt1 == parse_term('(lambda a:(p->q).(a b))')
 
         tts = [
-            '((Lx:p.x) y)',
+            '((lambda x:p.x) y)',
             '((a b) (c d))',
-            '((Lx:p.(Ly:q.(z y))) q)',
+            '((lambda x:p.(lambda y:q.(z y))) q)',
         ]
 
         for tt in tts:
-            assert(str(TypedTerm.parse(tt))==tt)
+            assert(str(parse_term(tt))==tt)
 
 
 def test_type_check():
     tests_ok = [
-        ("Lx:a->b.(x y)", "y:a", "(a->b)->b"),
-        ("Lx:a->(a->b).Ly:a.((x y) y)", "", "(a->(a->b))->(a->b)"),
+        ("lambda x:a->b.(x y)", "y:a", "(a->b)->b"),
+        ("lambda x:a->(a->b).lambda y:a.((x y) y)", "", "(a->(a->b))->(a->b)"),
         ("((x y) z)", "x:(a->b)->(c->d), y:a->b, z:c", "d"),
     ]
 
     for term, context, _type in tests_ok:
-        assert type_check(TypedTerm.parse(term), 
-                    Context.parse(context))==Type.parse(_type), term
+        assert type_check(parse_term(term), 
+                    parse_context(context))==parse_type(_type), term
 
     tests_fail = [
         ("y", "x:a, z:b"),
         ("x y", "x:(a->b)->c, y:a"),
-        ("Lx:a->b.x y", "y:c"),
+        ("lambda x:a->b.x y", "y:c"),
     ]
 
     for term, context in tests_fail:
         with pytest.raises(Exception):
-            type_check(TypedTerm.parse(term), Context.parse(context))
+            type_check(parse_term(term), parse_context(context))
