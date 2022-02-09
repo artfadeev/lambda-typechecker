@@ -2,7 +2,7 @@ import pytest
 from type_checker.types import Type, Implication, Base, Context
 from type_checker.terms import TypedTerm, Variable, Application, Abstraction
 from type_checker.type_checker import type_check
-from type_checker.parser import Scanner, TokenType
+from type_checker.parser import Scanner, TokenType, Parser
 from type_checker.parser import ScanError
 
 class TestParser:
@@ -48,6 +48,58 @@ class TestParser:
             with pytest.raises(ScanError) as exc:
                 Scanner(source).scan()
             assert exc.value.position == position
+
+
+    def test_not_fail(self):
+        tests = [
+            'lambda x:phi. x',
+            '(lambda x:phi->psi.lambda y:phi.(x y)) z',
+            'x y z (m n p k) abra cadabra',
+            'hello world',
+            'z lambda x:alpha->beta.x z ',
+        ]
+
+        for source in tests:
+            tokens = Scanner(source).scan()
+            Parser(tokens).parse()
+
+    def test_Parse_types(self):
+        tests = [
+            ('alpha', Base('alpha')),
+            ('(alpha ->  beta)', Implication(Base('alpha'), Base('beta'))),
+            ('(a->b)->c->d', Implication(Implication(Base('a'), Base('b')),
+                                        Implication(Base('c'), Base('d')))),
+        ]
+
+        for s, type in tests:
+            tokens = Scanner(s).scan()
+            assert Parser(tokens)._type()==type
+
+    def test_Parse_TypedTerms(self):
+        tests = [
+            ('((lambda x:a->b.x))', Abstraction('x', Implication(Base('a'), Base('b')), 
+                            Variable('x'))),
+            ('a b c', Application(Application(Variable('a'), Variable('b')),
+                                  Variable('c'))),
+            ('(lambda x:A->B->C.x a b) f',
+                Application(
+                    Abstraction(
+                        'x', 
+                        Implication(
+                            Base('A'), 
+                            Implication(Base('B'), Base('C'))
+                            ),
+                        Application(
+                            Application(Variable('x'), Variable('a')),
+                            Variable('b')
+                            )
+                        ),
+                    Variable('f')))
+        ]
+
+        for s, term in tests:
+            tokens = Scanner(s).scan()
+            assert Parser(tokens).parse()==term
 
 class TestType:
     def test_constuctors(self):

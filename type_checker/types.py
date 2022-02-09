@@ -53,9 +53,6 @@ class Base(Type):
     def __str__(self):
         return self.name
 
-    def __repr__(self):
-        return f'Base({self.name})'
-
 
 @dataclass
 class Implication(Type):
@@ -64,9 +61,6 @@ class Implication(Type):
 
     def __str__(self):
         return f'({self.left}->{self.right})'
-
-    def __repr__(self):
-        return f'Implication({repr(self.left)}, {repr(self.right)})'
 
     def apply(self, other):
         if self.left!=other:
