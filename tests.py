@@ -2,6 +2,29 @@ import pytest
 from type_checker.types import Type, Implication, Base, Context
 from type_checker.terms import TypedTerm, Variable, Application, Abstraction
 from type_checker.type_checker import type_check
+from type_checker.parser import Scanner, TokenType
+
+class TestParser:
+    def test_Scanner(self):
+        # Check whether exceptions are raised
+        Scanner('hello world').scan()
+        Scanner('lambda x....y HGH -> ->->::').scan()
+
+        tests = [
+            ('x y z', 
+                (TokenType.VARIABLE, TokenType.VARIABLE, TokenType.VARIABLE)),
+            ('   a->b   ',
+                (TokenType.VARIABLE, TokenType.ARROW, TokenType.VARIABLE)),
+            ('  (.:->',
+                (TokenType.BRACKET_OPEN, TokenType.DOT, TokenType.COLON,
+                    TokenType.ARROW)),
+        ]
+
+        for source, expected_token_types in tests:
+            tokens = Scanner(source).scan()
+            assert len(tokens)==len(expected_token_types)
+            for token, _type in zip(tokens, expected_token_types):
+                assert token.type==_type
 
 class TestType:
     def test_constuctors(self):
