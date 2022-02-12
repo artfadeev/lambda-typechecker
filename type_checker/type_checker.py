@@ -1,8 +1,6 @@
 from .types import Type, Implication, Context
 from .terms import TypedTerm, Variable, Application, Abstraction
 
-LAMBDA = 'L' # symbol for \lambda
-
 
 def type_check(term, context=None):
     if context is None:

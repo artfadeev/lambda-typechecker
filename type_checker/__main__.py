@@ -13,13 +13,15 @@ if __name__=='__main__':
     except ScanError as exc:
         print(str_term)
         print(' '*exc.position+'^')
-        print("Scan Error: "+exc.message)
+        print("Scan Error:", exc.message)
         exit()
 
     try:
         term = Parser(tokens).parse()
     except SyntaxError as exc:
-        print(exc.message)
+        print(str_term)
+        print(' '*exc.position+'^')
+        print("Parse error:", exc.message)
         exit()
 
     try:
