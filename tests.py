@@ -1,6 +1,7 @@
 import pytest
-from type_checker.types import Type, Implication, Base, Context
-from type_checker.terms import TypedTerm, Variable, Application, Abstraction
+from type_checker.types import Type, Implication, Base, Context, Universal
+from type_checker.terms import (TypedTerm, Variable, Application, Abstraction,
+                                TypeAbstraction, TypeApplication)
 from type_checker.type_checker import type_check
 from type_checker.parser import Scanner, TokenType, Parser, parse_context
 from type_checker.parser import ScanError
@@ -113,6 +114,21 @@ class TestType:
         assert t1 == t2
         assert t1 == t3
 
+    def test_systemf_parser(self):
+        tests = [
+            ('forall a. a->b', 
+                Universal('a', Implication(Base('a'), Base('b')))),
+            ('forall a. forall b. c',
+                Universal('a', Universal('b', Base('c')))),
+            ('a->b->forall c. a',
+                Implication(Base('a'), Implication(Base('b'), Universal('c', Base('a'))))),
+            ('(a)->(forall c.c->c)->a',
+                Implication(Base('a'), Implication(Universal('c', Implication(Base('c'), Base('c'))), Base('a')))),
+        ]
+
+        for str_type, type in tests:
+            assert parse_type(str_type)==type
+
     def test_apply(self):
         tests_valid = [
             ('a->((c->b)->c)', 'a', '((c->b)->c)'),
@@ -157,6 +173,19 @@ class TestTypedTerm:
 
         for tt in tts:
             assert(str(parse_term(tt))==tt)
+
+    def test_systemf_parser(self):
+        tests = [
+            ('type_lambda a. x [a]',
+                TypeAbstraction('a', TypeApplication(Variable('x'), Base('a')))),
+            ('x [a] [b]',
+                TypeApplication(TypeApplication(Variable('x'), Base('a')), Base('b'))),
+            ('(x (type_lambda a. x) [c])',
+                TypeApplication(Application(Variable('x'), TypeAbstraction('a', Variable('x'))), Base('c'))),
+        ]
+
+        for str_term, term in tests:
+            assert parse_term(str_term)==term
 
 
 def test_type_check():

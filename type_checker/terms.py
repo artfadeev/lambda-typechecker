@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from .types import Type, Base, Implication, Context
 
 LAMBDA = 'lambda '
+TYPE_LAMBDA = 'type_lambda '
 
 class TypedTerm:
     '''Typed term base class'''
@@ -27,9 +28,26 @@ class Abstraction(TypedTerm):
 
 
 @dataclass
+class TypeAbstraction(TypedTerm):
+    variable_name: str
+    inner_term: TypedTerm
+
+    def __str__(self):
+        return f'{TYPE_LAMBDA}{self.variable_name}.{self.inner_term}'
+
+
+@dataclass
 class Application(TypedTerm):
     left: TypedTerm
     right: TypedTerm
 
     def __str__(self):
         return f'({self.left} {self.right})'
+
+@dataclass
+class TypeApplication(TypedTerm):
+    left: TypedTerm
+    right: Type
+
+    def __str__(self):
+        return f'({self.left} [{self.right}])'

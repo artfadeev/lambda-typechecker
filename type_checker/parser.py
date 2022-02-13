@@ -1,7 +1,8 @@
 from enum import Enum
 from dataclasses import dataclass
-from .types import Base, Implication, Context
-from .terms import Variable, Application, Abstraction
+from .types import Base, Implication, Universal, Context
+from .terms import (Variable, Application, Abstraction, 
+                   TypeAbstraction, TypeApplication)
 
 class TokenType(Enum):
     LAMBDA = 1
@@ -11,16 +12,24 @@ class TokenType(Enum):
     BRACKET_CLOSE = 5
     VARIABLE = 6
     ARROW = 7
+    TYPE_LAMBDA = 8
+    SQ_BRACKET_OPEN = 9
+    SQ_BRACKET_CLOSE = 10
+    FOR_ALL = 11
 
 single_character_tokens = {
     ':': TokenType.COLON,
     '.': TokenType.DOT,
     '(': TokenType.BRACKET_OPEN,
     ')': TokenType.BRACKET_CLOSE,
+    '[': TokenType.SQ_BRACKET_OPEN,
+    ']': TokenType.SQ_BRACKET_CLOSE,
 }
 
 keywords = {
     'lambda': TokenType.LAMBDA,
+    'type_lambda': TokenType.TYPE_LAMBDA,
+    'forall': TokenType.FOR_ALL,
 }
 
 @dataclass
@@ -54,7 +63,8 @@ class Scanner:
         '''scan word (variable/keyword) starting at self.position'''
         start = self.position
 
-        while self.source[self.position].isalpha():
+        while self.source[self.position].isalpha() or \
+              self.source[self.position]=='_':
             self.position += 1
 
         return self.source[start:self.position]
@@ -119,21 +129,34 @@ class Parser:
         current = self.current()
         if current.type not in expected:
             raise SyntaxError(f"Expected {' or '.join(map(str, expected))}, "+\
-                                "got {self.current()}", current.position)
+                                f"got {self.current()}", current.position)
         if move:
             self.position += 1
         return current
 
     def _primary_type(self):
-        token = self.read(TokenType.VARIABLE, TokenType.BRACKET_OPEN)
+        token = self.read(TokenType.VARIABLE, TokenType.BRACKET_OPEN,
+                          TokenType.FOR_ALL, move=False)
 
         if token.type == TokenType.VARIABLE:
+            self.position += 1
             return Base(token.lexeme)
         elif token.type == TokenType.BRACKET_OPEN:
             opening_bracket_position = token.position
+            self.position += 1
             term = self._type()
             self.read(TokenType.BRACKET_CLOSE)
             return term
+        elif token.type == TokenType.FOR_ALL:
+            return self._universal_type()
+
+    def _universal_type(self):
+        self.read(TokenType.FOR_ALL)
+        variable_name = self.read(TokenType.VARIABLE).lexeme
+        self.read(TokenType.DOT)
+        inner_type = self._type()
+
+        return Universal(variable_name, inner_type)
 
     def _type(self):
         term = self._primary_type()
@@ -155,9 +178,18 @@ class Parser:
 
         return Abstraction(variable_name, variable_type, inner_term)
 
+    def _type_abstraction(self):
+        self.read(TokenType.TYPE_LAMBDA)
+        variable_name = self.read(TokenType.VARIABLE).lexeme
+        self.read(TokenType.DOT)
+        inner_term = self._application()
+
+        return TypeAbstraction(variable_name, inner_term)
+
     def _primary_term(self):
         token = self.read(TokenType.VARIABLE, TokenType.BRACKET_OPEN,
-                            TokenType.LAMBDA, move=False)
+                            TokenType.LAMBDA, TokenType.TYPE_LAMBDA,
+                            move=False)
         if token.type == TokenType.VARIABLE:
             # TODO: add self._variable?
             self.position += 1
@@ -169,12 +201,20 @@ class Parser:
             return term
         elif token.type == TokenType.LAMBDA:
             return self._lambda()
+        elif token.type == TokenType.TYPE_LAMBDA:
+            return self._type_abstraction()
 
     def _application(self):
         term = self._primary_term()
         while not self.end() and self.current().type in \
-            (TokenType.VARIABLE, TokenType.BRACKET_OPEN, TokenType.LAMBDA):
-            term = Application(term, self._primary_term())
+            (TokenType.VARIABLE, TokenType.BRACKET_OPEN,
+            TokenType.LAMBDA, TokenType.SQ_BRACKET_OPEN):
+            if self.current().type==TokenType.SQ_BRACKET_OPEN:
+                self.position+=1
+                term = TypeApplication(term, self._type())
+                self.read(TokenType.SQ_BRACKET_CLOSE)
+            else:
+                term = Application(term, self._primary_term())
 
         return term
 
