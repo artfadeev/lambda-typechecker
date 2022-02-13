@@ -304,6 +304,7 @@ def parse_context(str_context):
     If variables repeat, latest value will be taken"""
 
     # Assumptions: correct syntax
+    # Assumptions: no free type variables
     if str_context == "":
         return Context({})
 

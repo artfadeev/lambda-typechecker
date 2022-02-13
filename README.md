@@ -1,6 +1,6 @@
 # Lambda type checker
 
-This project provides type checker for simply typed lambda calculus.
+This project provides type checker for System F (polymorphic lambda calculus).
 
 ## Installation and usage
 
@@ -19,12 +19,21 @@ Syntax:
 * variables' names should contain only letters (except `λ`)
 * `(<term 1> <term 2>)` for applications
 * `(lambda <variable name>: <variable type>. <term>)` for abstractions. (you can use `λ` symbol instead of `lambda` keyword)
+* `<term> [<type>]` for type applications
+* `type_lambda <variable_name>: <term>` for type abstractions
 
 Example:
 ```bash
 $ python -m type_checker 'lambda x: (a->b)->a. lambda y: a->a->b. x lambda z: a. y z z'
 Type check successful
 Term's type (((a->b)->a)->((a->(a->b))->a))
+```
+
+system f example
+```bash
+$ python -m type_checker 'lambda x: forall a.a.x'
+Type check successful
+Term's type ((forall a. a)->(forall a. a))
 ```
 
 As you can see, brackets can be omitted. Note that application is left-associative and abstractions spread right as much as they can.

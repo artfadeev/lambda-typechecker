@@ -17,7 +17,7 @@ class Base(Type):
     Examples: Base('int'), Base('bool')
     """
 
-    # also for type variables in System F
+    # type variables in System F
     name: str
 
     def __str__(self):
@@ -51,6 +51,18 @@ class Universal(Type):
 
     def __str__(self):
         return f'(forall {self.variable_name}. {self.inner})'
+
+def substitute(type, variable, new):
+    if isinstance(type, Base):
+        return new
+    elif isinstance(type, Implication):
+        return Implication(substitute(type.left, variable, new), substitute(type.right, variable, new))
+    elif isinstance(type, Universal):
+        if type.variable_name == variable.name:
+            return type
+        else:
+            return Universal(type.variable_name, substitute(type.inner_term, variable, new))
+    
 
 class Context(dict):
     """class for contexts"""
