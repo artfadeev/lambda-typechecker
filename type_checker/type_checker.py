@@ -1,6 +1,10 @@
+from dataclasses import dataclass
 from .types import Type, Implication, Context
 from .terms import TypedTerm, Variable, Application, Abstraction
 
+@dataclass
+class UnknownVariableError(Exception):
+    message: str
 
 def type_check(term, context=None):
     if context is None:
@@ -8,7 +12,8 @@ def type_check(term, context=None):
 
     if isinstance(term, Variable):
         if term.name not in context.keys():
-            raise Exception(f'{term.name} lacks type in given context!')
+            raise UnknownVariableError(
+                f'Variable {term.name} lacks type in given context.')
         return context[term.name]
     elif isinstance(term, Abstraction):
         inner_context = context.copy()

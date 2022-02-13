@@ -1,8 +1,8 @@
 import argparse
 
-from .types import Type, Context
+from .types import Type, Context, TypeError
 from .terms import TypedTerm
-from .type_checker import type_check
+from .type_checker import type_check, UnknownVariableError
 from .parser import Scanner, Parser, parse_context, ScanError, SyntaxError
 
 cli_parser = argparse.ArgumentParser(
@@ -23,7 +23,7 @@ try:
 except ScanError as exc:
     print(source)
     print(' '*exc.position+'^')
-    print("Scan Error:", exc.message)
+    print('Scan Error:', exc.message)
     exit()
 
 try:
@@ -31,13 +31,15 @@ try:
 except SyntaxError as exc:
     print(source)
     print(' '*exc.position+'^')
-    print("Parse error:", exc.message)
+    print('Parse error:', exc.message)
     exit()
 
 try:
     _type = type_check(term, context)
-except Exception:
-    print('Type check unsuccessful')
+except TypeError as exc:
+    print('Type error: '+exc.message)
+except UnknownVariableError as exc:
+    print(exc.message)
 else:
     print('Type check successful')
     print(f'Term\'s type {str(_type)}')

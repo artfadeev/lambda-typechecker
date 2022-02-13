@@ -1,5 +1,9 @@
 from dataclasses import dataclass
 
+@dataclass
+class TypeError(Exception):
+    message: str
+
 class Type:
     '''Type base class'''
 
@@ -22,7 +26,7 @@ class Implication(Type):
 
     def apply(self, other):
         if self.left!=other:
-            raise Exception(f'Type {self} can\'t be applied to type {other}!')
+            raise TypeError(f'Type {self} can\'t be applied to type {other}.')
         return self.right
 
 
