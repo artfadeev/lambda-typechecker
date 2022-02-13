@@ -17,6 +17,7 @@ single_character_tokens = {
     '.': TokenType.DOT,
     '(': TokenType.BRACKET_OPEN,
     ')': TokenType.BRACKET_CLOSE,
+    'λ': TokenType.LAMBDA,
 }
 
 keywords = {
