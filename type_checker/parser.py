@@ -119,7 +119,7 @@ class Parser:
         current = self.current()
         if current.type not in expected:
             raise SyntaxError(f"Expected {' or '.join(map(str, expected))}, "+\
-                                "got {self.current()}", current.position)
+                                f"got {self.current().type}", current.position)
         if move:
             self.position += 1
         return current

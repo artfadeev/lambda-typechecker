@@ -1,33 +1,43 @@
+import argparse
+
 from .types import Type, Context
 from .terms import TypedTerm
 from .type_checker import type_check
 from .parser import Scanner, Parser, parse_context, ScanError, SyntaxError
 
-if __name__=='__main__':
-    str_context = input('Context: ')
-    str_term = input('Term: ')
+cli_parser = argparse.ArgumentParser(
+    description='Simply typed lambda calculus type checker')
 
-    context = parse_context(str_context)
-    try:
-        tokens = Scanner(str_term).scan()
-    except ScanError as exc:
-        print(str_term)
-        print(' '*exc.position+'^')
-        print("Scan Error:", exc.message)
-        exit()
+cli_parser.add_argument('source', type=str, 
+    help='term to check')
+cli_parser.add_argument('--context', dest='context', default='', type=str,
+    help='context (default is empty)')
 
-    try:
-        term = Parser(tokens).parse()
-    except SyntaxError as exc:
-        print(str_term)
-        print(' '*exc.position+'^')
-        print("Parse error:", exc.message)
-        exit()
+args = cli_parser.parse_args()
 
-    try:
-        _type = type_check(term, context)
-    except Exception:
-        print('Type check unsuccessful')
-    else:
-        print('Type check successful')
-        print(f'Term\'s type {str(_type)}')
+context = parse_context(args.context)
+source = args.source
+
+try:
+    tokens = Scanner(source).scan()
+except ScanError as exc:
+    print(source)
+    print(' '*exc.position+'^')
+    print("Scan Error:", exc.message)
+    exit()
+
+try:
+    term = Parser(tokens).parse()
+except SyntaxError as exc:
+    print(source)
+    print(' '*exc.position+'^')
+    print("Parse error:", exc.message)
+    exit()
+
+try:
+    _type = type_check(term, context)
+except Exception:
+    print('Type check unsuccessful')
+else:
+    print('Type check successful')
+    print(f'Term\'s type {str(_type)}')
